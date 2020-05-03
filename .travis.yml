@@ -1,0 +1,11 @@
+language: rust
+rust:
+  - stable
+cache: cargo
+script:
+  - cargo build
+  - ./tests/run.sh
+services:
+  - postgresql
+env:
+  - PGQL_DB_HOST=127.0.0.1 PGQL_DB_USER=postgres PGQL_DB_PASSWORD= PGQL_DB_NAME=travis_ci_test

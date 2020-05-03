@@ -1,0 +1,81 @@
+version: "2.4"
+
+services:
+  server:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - ./Cargo.toml:/app/Cargo.toml
+      - ./Cargo.lock:/app/Cargo.lock
+      - ./src:/app/src
+      - ./packages:/app/packages
+      - target:/app/target
+      - cargo:/cargo
+    environment:
+      CARGO_HOME: /cargo
+      PGQL_HOST: 0.0.0.0
+      PGQL_DB_URL: "host=db user=pgql password=pgql"
+      RUST_BACKTRACE: 1
+    networks:
+      - pgql
+      - db
+      - reverse-proxy
+    labels:
+      traefik.backend: "server_pgql"
+      traefik.port: "8080"
+      traefik.docker.network: "reverse-proxy"
+      traefik.enable: "true"
+      traefik.frontend.rule: "HostRegexp:pgql.{ip:[0-9.]+}.nip.io"
+
+  db:
+    image: postgres:12-alpine
+    environment:
+      POSTGRES_PASSWORD: pgql
+      POSTGRES_USER: pgql
+      POSTGRES_DB: pgql
+    ports:
+      - "5432:5432"
+    networks:
+      - db
+
+  adminer:
+    image: adminer:4.7.6
+    environment:
+      ADMINER_DESIGN: flat
+      ADMINER_PLUGINS: enum-option enum-types struct-comments tables-filter
+    labels:
+      traefik.backend: "adminer_pgql"
+      traefik.port: "8080"
+      traefik.docker.network: "reverse-proxy"
+      traefik.enable: "true"
+      traefik.frontend.rule: "HostRegexp:adminer.pgql.{ip:[0-9.]+}.nip.io"
+    networks:
+      - reverse-proxy
+      - db
+
+  tests:
+    build:
+      context: .
+      target: dev-tests
+    volumes:
+      - ./tests:/app/tests
+      - target:/app/target:ro
+    command: app/tests/run.sh
+    environment:
+      PGQL_DB_URL: "host=db user=pgql password=pgql dbname=pgql_test"
+    networks:
+      - db
+
+networks:
+  db: ~
+  pgql: ~
+  reverse-proxy:
+    external:
+      name: reverse-proxy
+
+volumes:
+  target:
+    driver: local
+  cargo:
+    driver: local

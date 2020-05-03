@@ -1,0 +1,12 @@
+[package]
+name = "pgql-schema"
+version = "0.1.0"
+authors = ["Mathieu Rochette <mathieu@texthtml.net>"]
+edition = "2018"
+
+[dependencies]
+juniper = { git = "https://github.com/graphql-rust/juniper", branch = "master" }
+bb8-postgres = "0.4.0"
+tokio-postgres = "0.5.4"
+bb8 = "0.4.2"
+futures = "0.3.4"

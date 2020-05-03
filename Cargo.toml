@@ -1,0 +1,17 @@
+[package]
+name = "pgql"
+version = "0.1.0"
+authors = ["Mathieu Rochette <mathieu@texthtml.net>"]
+edition = "2018"
+
+[dependencies]
+juniper_warp = { git = "https://github.com/graphql-rust/juniper", branch = "master" }
+tokio = { version = "0.2.20", features = ["full"] }
+warp = "0.2.2"
+log = "0.4.8"
+env_logger = "0.7.1"
+dotenv = "0.15.0"
+pgql-schema = { path = "./packages/schema" }
+
+[workspace]
+members = ["packages/schema"]
