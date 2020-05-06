@@ -41,7 +41,7 @@ start_server() {
     PGQL_HOST="$PGQL_HOST" \
     PGQL_PORT="$PGQL_PORT" \
     PGQL_DB_URL="$PGQL_DB_URL" \
-        ../target/debug/pgql &> ./logs.txt &
+        ../target/debug/pgql > ./logs.txt &
 
     trap 'kill %1' EXIT
 
@@ -241,8 +241,10 @@ reset_database () {
     if [ -z "$keep_database" ]; then
         psql="PGPASSWORD=\"$PGQL_DB_PASSWORD\" psql -h \"$PGQL_DB_HOST\" -U \"$PGQL_DB_USER\" -w"
         echo "drop database if exists $PGQL_DB_NAME; create database $PGQL_DB_NAME" | eval "$psql"
-        cat ./schema.sql | eval "$psql" -d "$PGQL_DB_NAME"
+        cat ./schema.sql | envsubst | eval "$psql" -d "$PGQL_DB_NAME"
     fi
 }
+
+export PGQL_DB_NAME
 
 main "$@"

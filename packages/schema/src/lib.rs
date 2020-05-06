@@ -1,6 +1,9 @@
+#[macro_use]
+extern crate derivative;
+
 mod config;
+mod connection;
 mod context;
-mod pool;
 mod schema;
 
 pub use config::Config;

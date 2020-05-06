@@ -23,7 +23,7 @@ async fn main() {
     let context = schema::Context::new(&config).await;
 
     let graphql_filter = juniper_warp::make_graphql_filter(
-        schema::build(&config),
+        schema::build(&config).await,
         warp::any().map(move || context.clone()).boxed(),
     );
     let graphiql_filter = juniper_warp::graphiql_filter("/", None);

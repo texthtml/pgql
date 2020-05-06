@@ -1,0 +1,4 @@
+type Query {
+  t1: Int!
+  t2: Int!
+}

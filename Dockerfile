@@ -15,4 +15,7 @@ RUN apt install -y postgresql-client
 
 RUN yarn global add get-graphql-schema
 
+# install envsubst
+RUN apt install -y gettext-base
+
 ENTRYPOINT [ "/app/tests/run.sh" ]

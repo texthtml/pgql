@@ -1,3 +1,6 @@
+mod introspection;
+
+use itertools::Itertools;
 use std::collections::HashMap;
 
 impl juniper::Context for crate::context::Context {}
@@ -7,7 +10,7 @@ type Resolver = for<'a> fn(
     &'a juniper::Executor<crate::context::Context, juniper::DefaultScalarValue>,
 ) -> ReturnType<'a>;
 
-trait Registrable: Send + Sync {
+trait Registrable: Send + Sync + std::fmt::Debug {
     fn register<'r>(
         self: &Self,
         registry: &mut juniper::Registry<'r>,
@@ -19,15 +22,18 @@ trait Registrable: Send + Sync {
     ) -> ReturnType<'a>;
 }
 
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct FieldInfo<S> {
     resolve_type: std::marker::PhantomData<S>,
     name: String,
+    #[derivative(Debug = "ignore")]
     resolver: Resolver,
 }
 
 impl<S> Registrable for FieldInfo<S>
 where
-    S: juniper::GraphQLType<TypeInfo = ()> + Send + Sync,
+    S: juniper::GraphQLType<TypeInfo = ()> + Send + Sync + std::fmt::Debug,
 {
     fn name(self: &Self) -> String {
         self.name.to_owned()
@@ -48,6 +54,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct TypeInfo {
     name: String,
     fields: HashMap<String, Box<dyn Registrable>>,
@@ -70,6 +77,7 @@ impl TypeInfo {
     }
 }
 
+#[derive(Debug)]
 pub struct Query {}
 
 impl juniper::GraphQLTypeAsync<juniper::DefaultScalarValue> for Query {
@@ -106,6 +114,7 @@ impl juniper::GraphQLType<juniper::DefaultScalarValue> for Query {
             .fields
             .values()
             .map(|field| field.register(registry))
+            .sorted_by_key(|field| field.name.to_owned())
             .collect::<Vec<_>>();
 
         registry.build_object_type::<Self>(info, fields).into_meta()
@@ -119,27 +128,38 @@ pub type Schema = juniper::RootNode<
     juniper::EmptySubscription<crate::context::Context>,
 >;
 
-pub fn build(_config: &crate::Config) -> Schema {
-    let fields: Vec<Box<dyn Registrable>> = vec![Box::new(FieldInfo::<i32> {
-        resolve_type: std::marker::PhantomData {},
-        name: "apiVersion".into(),
-        resolver: |executor| {
-            let f = async move {
-                executor
-                    .context()
-                    .pool
-                    .get()
-                    .await
-                    .unwrap()
-                    .query_one("select 2", &[])
-                    .await
-                    .map(move |row| row.get::<_, i32>(0))
-                    .map(juniper::Value::scalar)
-                    .map_err(juniper::FieldError::from)
-            };
-            Box::pin(f)
-        },
-    })];
+pub async fn build(config: &crate::Config) -> Schema {
+    let pool = crate::connection::build(config).await;
+    let introspection = introspection::Introspection::from(&pool).await;
+
+    let fields = {
+        let mut fields_builder: Vec<Box<dyn Registrable>> = vec![];
+
+        for relation in introspection.relations() {
+            fields_builder.push(Box::new(FieldInfo::<i32> {
+                resolve_type: std::marker::PhantomData {},
+                name: relation.name.clone(),
+                resolver: |executor| {
+                    let f = async move {
+                        executor
+                            .context()
+                            .pool
+                            .get()
+                            .await
+                            .unwrap()
+                            .query_one("select 2", &[])
+                            .await
+                            .map(move |row| row.get::<_, i32>(0))
+                            .map(juniper::Value::scalar)
+                            .map_err(juniper::FieldError::from)
+                    };
+                    Box::pin(f)
+                },
+            }));
+        }
+
+        fields_builder
+    };
 
     juniper::RootNode::new_with_info(
         Query {},
