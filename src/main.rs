@@ -1,13 +1,13 @@
 #![deny(warnings)]
 
-extern crate log;
 extern crate dotenv;
+extern crate log;
 
 use dotenv::dotenv;
-use std::env;
-use std::net::{SocketAddr,IpAddr};
-use warp::Filter;
 use pgql_schema as schema;
+use std::env;
+use std::net::{IpAddr, SocketAddr};
+use warp::Filter;
 
 #[tokio::main]
 async fn main() {
@@ -17,23 +17,25 @@ async fn main() {
     env_logger::init();
 
     let config = schema::Config {
-        db_url: env::var("PGQL_DB_URL").expect("Invalid PGQL_DB_URL")
+        db_url: env::var("PGQL_DB_URL").expect("Invalid PGQL_DB_URL"),
     };
 
     let context = schema::Context::new(&config).await;
 
     let graphql_filter = juniper_warp::make_graphql_filter(
         schema::build(&config),
-        warp::any().map(move || context.clone()).boxed()
+        warp::any().map(move || context.clone()).boxed(),
     );
     let graphiql_filter = juniper_warp::graphiql_filter("/", None);
 
     warp::serve(
-        warp::post().and(graphql_filter)
+        warp::post()
+            .and(graphql_filter)
             .or(warp::get().and(graphiql_filter))
             .with(warp::log("pgql_server")),
     )
-    .run(server_addr()).await
+    .run(server_addr())
+    .await
 }
 
 fn server_addr() -> SocketAddr {

@@ -4,10 +4,12 @@ rust:
 cache: cargo
 before_script:
   - rustup component add clippy
+  - rustup component add rustfmt
   - cargo build
 script:
   - cargo clippy
   - ./tests/run.sh
+  - cargo fmt -- --check
 services:
   - postgresql
 env:
