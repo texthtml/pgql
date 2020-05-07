@@ -3,12 +3,10 @@
 extern crate log;
 extern crate dotenv;
 
-use juniper_warp;
 use dotenv::dotenv;
 use std::env;
 use std::net::{SocketAddr,IpAddr};
 use warp::Filter;
-use tokio;
 use pgql_schema as schema;
 
 #[tokio::main]
@@ -40,12 +38,12 @@ async fn main() {
 
 fn server_addr() -> SocketAddr {
     let ip = env::var("PGQL_HOST")
-        .unwrap_or("127.0.0.1".into())
+        .unwrap_or_else(|_| "127.0.0.1".into())
         .parse::<IpAddr>()
         .expect("Invalid PGQL_HOST");
 
     let port = env::var("PGQL_PORT")
-        .unwrap_or("8080".into())
+        .unwrap_or_else(|_| "8080".into())
         .parse::<u16>()
         .expect("Invalid PGQL_PORT");
 
