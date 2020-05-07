@@ -113,8 +113,8 @@ pub fn build(_config: &crate::Config) -> Schema {
                         .pool.get().await.unwrap()
                         .query_one("select 2", &[]).await
                         .map(move |row| row.get::<_,i32>(0))
-                        .map(|scalar| juniper::Value::scalar(scalar))
-                        .map_err(|err| juniper::FieldError::from(err))
+                        .map(juniper::Value::scalar)
+                        .map_err(juniper::FieldError::from)
                 };
                 Box::pin(f)
             }

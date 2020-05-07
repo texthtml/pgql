@@ -2,8 +2,11 @@ language: rust
 rust:
   - stable
 cache: cargo
-script:
+before_script:
+  - rustup component add clippy
   - cargo build
+script:
+  - cargo clippy
   - ./tests/run.sh
 services:
   - postgresql
