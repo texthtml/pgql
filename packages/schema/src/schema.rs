@@ -5,12 +5,11 @@ use std::collections::HashMap;
 
 impl juniper::Context for crate::context::Context {}
 
-type ReturnType<'a> = juniper::BoxFuture<'a, juniper::ExecutionResult<juniper::DefaultScalarValue>>;
-type Resolver = for<'a> fn(
+type Resolver<V, E> = for<'a> fn(
     &'a juniper::Executor<crate::context::Context, juniper::DefaultScalarValue>,
-) -> ReturnType<'a>;
+) -> juniper::BoxFuture<'a, Result<V, E>>;
 
-trait Registrable: Send + Sync + std::fmt::Debug {
+trait Registrable<'b>: Send + Sync + std::fmt::Debug {
     fn register<'r>(
         self: &Self,
         registry: &mut juniper::Registry<'r>,
@@ -19,21 +18,28 @@ trait Registrable: Send + Sync + std::fmt::Debug {
     fn resolve<'a>(
         self: &Self,
         executor: &'a juniper::Executor<crate::context::Context, juniper::DefaultScalarValue>,
-    ) -> ReturnType<'a>;
+    ) -> juniper::BoxFuture<'a, juniper::ExecutionResult<juniper::DefaultScalarValue>>
+    where
+        'b: 'a;
 }
 
 #[derive(Derivative)]
 #[derivative(Debug)]
-pub struct FieldInfo<S> {
-    resolve_type: std::marker::PhantomData<S>,
+struct FieldInfo<S, E>
+where
+    S: Into<juniper::Value>,
+    E: Into<juniper::FieldError>,
+{
     name: String,
     #[derivative(Debug = "ignore")]
-    resolver: Resolver,
+    resolver: Resolver<S, E>,
 }
 
-impl<S> Registrable for FieldInfo<S>
+impl<'b, S: Into<juniper::Value>, E: Into<juniper::FieldError>> Registrable<'b> for FieldInfo<S, E>
 where
     S: juniper::GraphQLType<TypeInfo = ()> + Send + Sync + std::fmt::Debug,
+    S: 'b,
+    E: 'b,
 {
     fn name(self: &Self) -> String {
         self.name.to_owned()
@@ -49,19 +55,29 @@ where
     fn resolve<'a>(
         self: &Self,
         executor: &'a juniper::Executor<crate::context::Context, juniper::DefaultScalarValue>,
-    ) -> ReturnType<'a> {
-        (self.resolver)(executor)
+    ) -> juniper::BoxFuture<'a, juniper::ExecutionResult<juniper::DefaultScalarValue>>
+    where
+        'b: 'a,
+    {
+        let resolver = self.resolver;
+
+        Box::pin(async move {
+            resolver(executor)
+                .await
+                .map(|scalar| scalar.into())
+                .map_err(|err| err.into())
+        })
     }
 }
 
 #[derive(Debug)]
-pub struct TypeInfo {
+pub struct TypeInfo<'a> {
     name: String,
-    fields: HashMap<String, Box<dyn Registrable>>,
+    fields: HashMap<String, Box<dyn Registrable<'a>>>,
 }
 
-impl TypeInfo {
-    fn new(name: String, fields: Vec<Box<dyn Registrable>>) -> Self {
+impl<'a> TypeInfo<'a> {
+    fn new(name: String, fields: Vec<Box<dyn Registrable<'a>>>) -> Self {
         TypeInfo {
             name,
             fields: {
@@ -78,9 +94,19 @@ impl TypeInfo {
 }
 
 #[derive(Debug)]
-pub struct Query {}
+pub struct Query<'a> {
+    l: std::marker::PhantomData<&'a ()>,
+}
 
-impl juniper::GraphQLTypeAsync<juniper::DefaultScalarValue> for Query {
+impl<'a> Query<'a> {
+    pub fn new() -> Self {
+        Self {
+            l: std::marker::PhantomData {},
+        }
+    }
+}
+
+impl<'b> juniper::GraphQLTypeAsync<juniper::DefaultScalarValue> for Query<'b> {
     fn resolve_field_async<'a>(
         &'a self,
         info: &'a Self::TypeInfo,
@@ -95,9 +121,9 @@ impl juniper::GraphQLTypeAsync<juniper::DefaultScalarValue> for Query {
     }
 }
 
-impl juniper::GraphQLType<juniper::DefaultScalarValue> for Query {
+impl<'a> juniper::GraphQLType<juniper::DefaultScalarValue> for Query<'a> {
     type Context = crate::context::Context;
-    type TypeInfo = TypeInfo;
+    type TypeInfo = TypeInfo<'a>;
 
     fn name(info: &Self::TypeInfo) -> Option<&str> {
         Some(&info.name)
@@ -121,14 +147,14 @@ impl juniper::GraphQLType<juniper::DefaultScalarValue> for Query {
     }
 }
 
-pub type Schema = juniper::RootNode<
+pub type Schema<'a> = juniper::RootNode<
     'static,
-    Query,
+    Query<'a>,
     juniper::EmptyMutation<crate::context::Context>,
     juniper::EmptySubscription<crate::context::Context>,
 >;
 
-pub async fn build(config: &crate::Config) -> Schema {
+pub async fn build<'a>(config: &crate::Config) -> Schema<'a> {
     let pool = crate::connection::build(config).await;
     let introspection = introspection::Introspection::from(&pool).await;
 
@@ -136,8 +162,7 @@ pub async fn build(config: &crate::Config) -> Schema {
         let mut fields_builder: Vec<Box<dyn Registrable>> = vec![];
 
         for relation in introspection.relations() {
-            fields_builder.push(Box::new(FieldInfo::<i32> {
-                resolve_type: std::marker::PhantomData {},
+            fields_builder.push(Box::new(FieldInfo::<_, _> {
                 name: relation.name.clone(),
                 resolver: |executor| {
                     let f = async move {
@@ -150,8 +175,6 @@ pub async fn build(config: &crate::Config) -> Schema {
                             .query_one("select 2", &[])
                             .await
                             .map(move |row| row.get::<_, i32>(0))
-                            .map(juniper::Value::scalar)
-                            .map_err(juniper::FieldError::from)
                     };
                     Box::pin(f)
                 },
@@ -162,7 +185,7 @@ pub async fn build(config: &crate::Config) -> Schema {
     };
 
     juniper::RootNode::new_with_info(
-        Query {},
+        Query::new(),
         juniper::EmptyMutation::<crate::context::Context>::new(),
         juniper::EmptySubscription::<crate::context::Context>::new(),
         TypeInfo::new("Query".into(), fields),
