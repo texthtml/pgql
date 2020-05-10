@@ -93,17 +93,9 @@ impl<'a> TypeInfo<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Query<'a> {
     l: std::marker::PhantomData<&'a ()>,
-}
-
-impl<'a> Query<'a> {
-    pub fn new() -> Self {
-        Self {
-            l: std::marker::PhantomData {},
-        }
-    }
 }
 
 impl<'b> juniper::GraphQLTypeAsync<juniper::DefaultScalarValue> for Query<'b> {
@@ -185,7 +177,7 @@ pub async fn build<'a>(config: &crate::Config) -> Schema<'a> {
     };
 
     juniper::RootNode::new_with_info(
-        Query::new(),
+        Query::default(),
         juniper::EmptyMutation::<crate::context::Context>::new(),
         juniper::EmptySubscription::<crate::context::Context>::new(),
         TypeInfo::new("Query".into(), fields),
