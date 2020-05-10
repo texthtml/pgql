@@ -1,4 +1,14 @@
 type Query {
-  t1: Int!
-  t2: Int!
+  t1: T1!
+  t2: T2!
+}
+
+type T1 {
+    id: Int!
+}
+
+type T2 {
+    id: Int!
+    c1: Int!
+    c2: Int!
 }

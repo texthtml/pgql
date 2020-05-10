@@ -241,7 +241,11 @@ reset_database () {
     if [ -z "$keep_database" ]; then
         psql="PGPASSWORD=\"$PGQL_DB_PASSWORD\" psql -h \"$PGQL_DB_HOST\" -U \"$PGQL_DB_USER\" -w -v ON_ERROR_STOP=1 -q"
         echo "drop database if exists $PGQL_DB_NAME; create database $PGQL_DB_NAME" | eval "$psql"
-        cat ./schema.sql | envsubst | eval "$psql" -d "$PGQL_DB_NAME"
+        {
+            echo "begin;"
+            cat ./schema.sql ./data.sql
+            echo "commit;"
+        } | envsubst | eval "$psql" -d "$PGQL_DB_NAME"
     fi
 }
 
