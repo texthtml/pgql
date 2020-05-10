@@ -17,6 +17,7 @@ services:
       PGQL_HOST: 0.0.0.0
       PGQL_DB_URL: "host=db user=pgql password=pgql"
       RUST_BACKTRACE: 1
+      RUST_LOG: pgql
     networks:
       - pgql
       - db

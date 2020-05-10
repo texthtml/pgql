@@ -13,7 +13,6 @@ use warp::Filter;
 async fn main() {
     dotenv().ok();
 
-    ::std::env::set_var("RUST_LOG", "pgql_server");
     env_logger::init();
 
     let config = schema::Config {
@@ -32,7 +31,7 @@ async fn main() {
         warp::post()
             .and(graphql_filter)
             .or(warp::get().and(graphiql_filter))
-            .with(warp::log("pgql_server")),
+            .with(warp::log("pgql")),
     )
     .run(server_addr())
     .await
