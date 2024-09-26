@@ -30,7 +30,7 @@ jobs:
           toolchain: 1.40.0
       - run: ./tests/run.sh
     env:
-      PGQL_DB_HOST: postgres
+      PGQL_DB_HOST: 127.0.0.1
       PGQL_DB_USER: postgres
       PGQL_DB_PASSWORD: postgres 
       PGQL_DB_NAME: travis_ci_test
@@ -46,6 +46,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
 
   clippy:
     name: cargo clippy
