@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 juniper_warp = { git = "https://github.com/graphql-rust/juniper", rev = "d13305f" }
-tokio = { version = "0.2.20", features = ["full"] }
+tokio = { version = "1.0.0", features = ["full"] }
 warp = "0.2.2"
 log = "0.4.8"
 env_logger = "0.7.1"
