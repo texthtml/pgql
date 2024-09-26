@@ -244,12 +244,15 @@ read_args() {
 }
 
 reset_database () {
+    psql="PGPASSWORD=\"$PGQL_DB_PASSWORD\" psql -h \"$PGQL_DB_HOST\" -U \"$PGQL_DB_USER\" -w -v ON_ERROR_STOP=1 -q"
+
     if [ -z "$keep_database" ]; then
-        psql="PGPASSWORD=\"$PGQL_DB_PASSWORD\" psql -h \"$PGQL_DB_HOST\" -U \"$PGQL_DB_USER\" -w -v ON_ERROR_STOP=1 -q"
+        echo Creating Database
         echo "drop database if exists $PGQL_DB_NAME; create database $PGQL_DB_NAME" | eval "$psql"
     fi
 
     if [ -z "$create_schema" ]; then
+        echo Creating DB schema
         cat ./schema.sql | envsubst | eval "$psql" -d "$PGQL_DB_NAME"
     fi
 }
