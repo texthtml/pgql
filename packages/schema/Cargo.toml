@@ -8,7 +8,7 @@ edition = "2018"
 juniper = { git = "https://github.com/graphql-rust/juniper", rev = "d13305f" }
 bb8-postgres = "0.4.0"
 tokio-postgres = "0.5.4"
-bb8 = "0.4.2"
+bb8 = "0.8.0"
 futures = "0.3.4"
 derivative = "2.1.1"
 itertools = "0.9.0"
