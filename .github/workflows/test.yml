@@ -34,7 +34,7 @@ jobs:
       PGQL_DB_HOST: 127.0.0.1
       PGQL_DB_USER: postgres
       PGQL_DB_PASSWORD: postgres 
-      PGQL_DB_NAME: travis_ci_test
+      PGQL_DB_NAME: postgres
     services:
       postgres:
         image: postgres:12
