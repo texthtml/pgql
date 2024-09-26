@@ -251,7 +251,7 @@ reset_database () {
         echo "drop database if exists $PGQL_DB_NAME; create database $PGQL_DB_NAME" | eval "$psql"
     fi
 
-    if [ -z "$create_schema" ]; then
+    if [ ! -z "$create_schema" ]; then
         echo Creating DB schema
         cat ./schema.sql | envsubst | eval "$psql" -d "$PGQL_DB_NAME"
     fi
