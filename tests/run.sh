@@ -11,6 +11,7 @@ filter=""
 no_confirmation=""
 quiet=""
 keep_database=""
+create_schema=1
 
 total=0;
 failures=();
@@ -194,6 +195,7 @@ read_args() {
                 echo "   -p, --patch              Patch expected output files to match actual output when different"
                 echo "   -n, --no-confirmation    Don’t ask for confirmation before updated expected output files"
                 echo "   -k, --keep-database      Don’t reset the database at start"
+                echo "       --no-schema          Don’t create the schema at start"
                 echo "   -f, --filter FILTER      Only execute test matching FILTER"
                 exit 0
                 ;;
@@ -215,6 +217,10 @@ read_args() {
                 ;;
             -k|--keep-database)
                 keep_database=1
+                shift
+                ;;
+            --no-schema)
+                create_schema=""
                 shift
                 ;;
             -q|--quiet)
@@ -241,6 +247,9 @@ reset_database () {
     if [ -z "$keep_database" ]; then
         psql="PGPASSWORD=\"$PGQL_DB_PASSWORD\" psql -h \"$PGQL_DB_HOST\" -U \"$PGQL_DB_USER\" -w -v ON_ERROR_STOP=1 -q"
         echo "drop database if exists $PGQL_DB_NAME; create database $PGQL_DB_NAME" | eval "$psql"
+    fi
+
+    if [ -z "$create_schema" ]; then
         cat ./schema.sql | envsubst | eval "$psql" -d "$PGQL_DB_NAME"
     fi
 }
