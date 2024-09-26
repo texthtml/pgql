@@ -1,4 +1,4 @@
-FROM rust:1.43 as dev
+FROM rust:1.81 as dev
 
 RUN cargo install watchexec
 
