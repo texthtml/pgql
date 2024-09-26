@@ -41,7 +41,7 @@ services:
       - db
 
   adminer:
-    image: adminer:4.7.6
+    image: adminer:4.8.1
     environment:
       ADMINER_DESIGN: flat
       ADMINER_PLUGINS: enum-option enum-types struct-comments tables-filter
