@@ -11,7 +11,7 @@ juniper_warp = { git = "https://github.com/graphql-rust/juniper", rev = "d13305f
 tokio = { version = "0.2.20", features = ["full"] }
 warp = "0.2.2"
 log = "0.4.8"
-env_logger = "0.7.1"
+env_logger = "0.11.0"
 dotenv = "0.15.0"
 pgql-schema = { path = "./packages/schema" }
 
