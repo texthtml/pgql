@@ -245,7 +245,7 @@ read_args() {
 
 reset_database () {
     export PGPASSWORD="$PGQL_DB_PASSWORD"
-    psql="psql -h \"$PGQL_DB_HOST\" -U \"$PGQL_DB_USER\" -w -v ON_ERROR_STOP=1 -q"
+    psql="psql -h $PGQL_DB_HOST -U $PGQL_DB_USER -w -v ON_ERROR_STOP=1 -q"
 
     if [ -z "$keep_database" ]; then
         echo Creating Database
