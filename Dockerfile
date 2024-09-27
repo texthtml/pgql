@@ -6,7 +6,7 @@ WORKDIR /app
 
 ENTRYPOINT [ "watchexec", "-i", "target", "-r", "cargo run --color always" ]
 
-FROM node:12 as dev-tests
+FROM node:20 as dev-tests
 
 RUN apt update
 
