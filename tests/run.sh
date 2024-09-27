@@ -256,7 +256,6 @@ reset_database () {
         echo Creating DB schema
         cat ./schema.sql | envsubst
         cat ./schema.sql | envsubst | $psql -d "$PGQL_DB_NAME"
-        $psql -d "$PGQL_DB_NAME" -c "\\dt"
     fi
 }
 
