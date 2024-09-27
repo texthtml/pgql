@@ -31,7 +31,7 @@ jobs:
       - run: cargo build
       - run: ./tests/run.sh --keep-database --diff
     env:
-      PGQL_DB_HOST: 127.0.0.1
+      PGQL_DB_HOST: localhost
       PGQL_DB_USER: postgres
       PGQL_DB_PASSWORD: postgres 
       PGQL_DB_NAME: postgres
